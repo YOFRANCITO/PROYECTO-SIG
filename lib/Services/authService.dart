@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:xml/xml.dart';
 //import 'dart:ffi';
 import 'package:http/http.dart' as http;
 import '../utils/apiBack.dart';
@@ -6,26 +7,27 @@ import '../models/loginModel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-   Future<bool> login(String login, String password) async {
+    Future<bool> login(String login, String password) async {
     final url = Uri.parse('http://190.171.244.211:8080/wsVarios/wsAd.asmx');
 
     // Cuerpo de la solicitud SOAP
-    final soapBody = '''
-    <?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <ValidarLoginPassword xmlns="http://tempuri.org/">
-          <lsLogin>$login</lsLogin>
-          <lsPassword>$password</lsPassword>
-        </ValidarLoginPassword>
-      </soap:Body>
-    </soap:Envelope>
-    ''';
+    final soapBody =  '''
+<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+    <ValidarLoginPassword xmlns="http://tempuri.org/">
+      <lsLogin>$login</lsLogin>
+      <lsPassword>$password</lsPassword>
+    </ValidarLoginPassword>
+  </soap:Body>
+</soap:Envelope>
+''';
 
-    // Configuración de encabezados
+
+    // Encabezados (ajustados según la configuración de Postman)
     final headers = {
-      'Content-Type': 'text/xml; charset=utf-8',
-      'SOAPAction': 'http://tempuri.org/ValidarLoginPassword',
+        'Content-Type': 'text/xml; charset=utf-8',
+      'SOAPAction': '"http://tempuri.org/ValidarLoginPassword"',
     };
 
     try {
@@ -33,29 +35,40 @@ class AuthService {
       final response = await http.post(
         url,
         headers: headers,
-        body: utf8.encode(soapBody),
+        body: soapBody,
       );
 
-      if (response.statusCode == 200) {
-        // Procesar la respuesta SOAP
-        final responseBody = response.body;
-        print("Respuesta del servidor: $responseBody");
+      // Mostrar el estado y la respuesta para depuración
+      print("Estado de la solicitud: ${response.statusCode}");
+      print("Cuerpo de la respuesta: ${response.body}");
 
-        // Extraer el resultado de ValidarLoginPassword
-        if (responseBody.contains('<ValidarLoginPasswordResult>true</ValidarLoginPasswordResult>')) {
+         if (response.statusCode == 200) {
+      // Usar expresión regular para extraer el contenido de ValidarLoginPasswordResult
+      final regExp = RegExp(r'<ValidarLoginPasswordResult>(.*?)</ValidarLoginPasswordResult>');
+      final match = regExp.firstMatch(response.body);
+
+      if (match != null) {
+        final result = match.group(1);
+        print('Resultado del login: $result');
+
+        // Verificar si el resultado contiene el valor esperado
+        if (result != null && result.startsWith('OK')) {
           return true; // Login exitoso
-        } else {
-          return false; // Credenciales inválidas
         }
-      } else {
-        print('Error en la solicitud: ${response.statusCode}');
-        return false;
       }
-    } catch (e) {
-      print('Excepción durante el login: $e');
+
+      return false; // Credenciales incorrectas o error en el formato
+    } else {
+      print('Error en la solicitud: ${response.statusCode}');
       return false;
     }
+  } catch (e) {
+    print('Excepción durante el login: $e');
+    return false;
   }
+  
+  }
+
 
   Future<void> saveUserData(Map<String, dynamic> userData) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
