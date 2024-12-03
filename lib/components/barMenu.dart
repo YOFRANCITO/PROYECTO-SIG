@@ -41,7 +41,7 @@ class BottomNavBar extends StatelessWidget {
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.check_circle_outline),
-          label: 'Asistencia',
+          label: 'Lectura',
         ),
         // BottomNavigationBarItem(
         //   icon: Icon(Icons.schedule),
@@ -49,11 +49,11 @@ class BottomNavBar extends StatelessWidget {
         // ),
         BottomNavigationBarItem(
           icon: Icon(Icons.book),
-          label: 'Programacion',
+          label: 'Reconexion',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.assignment),
-          label: 'Registro',
+          label: 'Cortes',
         ),
       ],
     );
